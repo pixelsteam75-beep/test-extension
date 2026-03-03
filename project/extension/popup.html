@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellness MVP Tracker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Wellness Tracker</h1>
+
+    <div class="timer-section">
+      <div class="mode-display" id="modeDisplay">Idle</div>
+      <div class="time-display" id="timeDisplay">00:00</div>
+    </div>
+
+    <div class="controls">
+      <button id="startFocusBtn" class="btn btn-primary">Start Focus (25m)</button>
+      <button id="startBreakBtn" class="btn btn-secondary">Start Break (5m)</button>
+      <button id="resetBtn" class="btn btn-danger">Reset</button>
+    </div>
+
+    <div class="dashboard-link">
+      <button id="openDashboardBtn" class="btn btn-link">Open Dashboard</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellness Tracker Dashboard</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Wellness Tracker Dashboard</h1>
+      <p class="subtitle">Track your daily activity and focus sessions</p>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-value" id="totalTime">0m</div>
+        <div class="stat-label">Total Tracked Time Today</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-value" id="focusSessions">0</div>
+        <div class="stat-label">Focus Sessions Completed</div>
+      </div>
+    </div>
+
+    <div class="domains-section">
+      <h2>Top Domains Today</h2>
+      <div class="table-container">
+        <table id="domainsTable">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Domain</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="domainsTableBody">
+            <tr>
+              <td colspan="3" class="empty-state">No activity tracked yet today</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
