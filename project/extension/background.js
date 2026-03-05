@@ -2,43 +2,124 @@ const FOCUS_DURATION = 25 * 60 * 1000;
 const BREAK_DURATION = 5 * 60 * 1000;
 const ALARM_NAME = 'pomodoroTimer';
 
-const SOCIAL_DOMAINS = new Set([
-  'twitter.com', 'x.com',
-  'instagram.com',
-  'facebook.com',
-  'reddit.com',
-  'tiktok.com',
-  'youtube.com',
-  'linkedin.com',
-  'snapchat.com',
-  'pinterest.com',
-  'threads.net'
-]);
+const DOMAIN_CATEGORIES = {
+  Productivity: new Set([
+    'notion.so', 'asana.com', 'trello.com', 'monday.com', 'clickup.com',
+    'basecamp.com', 'todoist.com', 'linear.app', 'height.app', 'airtable.com',
+    'docs.google.com', 'sheets.google.com', 'slides.google.com', 'drive.google.com',
+    'dropbox.com', 'box.com', 'confluence.atlassian.com', 'coda.io', 'craft.do',
+    'slack.com', 'teams.microsoft.com', 'zoom.us', 'meet.google.com', 'whereby.com',
+    'loom.com', 'calendly.com', 'cal.com',
+    'github.com', 'gitlab.com', 'figma.com', 'canva.com', 'miro.com',
+    'vercel.com', 'netlify.com', 'jira.atlassian.com', 'bitbucket.org',
+    'coursera.org', 'udemy.com', 'skillshare.com', 'khanacademy.org', 'pluralsight.com',
+    'claude.ai', 'chatgpt.com', 'gemini.google.com', 'perplexity.ai',
+    'copilot.microsoft.com', 'midjourney.com',
+    'mail.google.com', 'outlook.live.com', 'calendar.google.com',
+    'proton.me', 'superhuman.com', 'stackoverflow.com'
+  ]),
+  Social: new Set([
+    'twitter.com', 'x.com', 'instagram.com', 'facebook.com', 'reddit.com',
+    'tiktok.com', 'youtube.com', 'linkedin.com', 'snapchat.com', 'pinterest.com',
+    'threads.net', 'tumblr.com', 'discord.com', 'twitch.tv', 'mastodon.social',
+    'bluesky.app', 'bereal.com', 'clubhouse.com', 'nextdoor.com', 'quora.com'
+  ]),
+  News: new Set([
+    'nytimes.com', 'washingtonpost.com', 'theguardian.com', 'bbc.com', 'bbc.co.uk',
+    'cnn.com', 'msnbc.com', 'foxnews.com', 'npr.org', 'apnews.com',
+    'reuters.com', 'bloomberg.com', 'wsj.com', 'theatlantic.com', 'axios.com',
+    'politico.com', 'techcrunch.com', 'theverge.com', 'wired.com', 'arstechnica.com',
+    'hackernews.com', 'news.ycombinator.com', 'medium.com', 'substack.com'
+  ]),
+  Shopping: new Set([
+    'amazon.com', 'ebay.com', 'etsy.com', 'walmart.com', 'target.com',
+    'bestbuy.com', 'wayfair.com', 'shopify.com', 'shop.app', 'wish.com',
+    'aliexpress.com', 'costco.com', 'newegg.com'
+  ]),
+  Entertainment: new Set([
+    'netflix.com', 'hulu.com', 'disneyplus.com', 'hbomax.com', 'max.com',
+    'peacocktv.com', 'paramountplus.com', 'spotify.com', 'apple.com',
+    'music.apple.com', 'pandora.com', 'soundcloud.com', 'vimeo.com',
+    'crunchyroll.com', 'funimation.com'
+  ])
+};
 
 const BRAND_NAMES = {
-  'twitter.com': 'Twitter',
-  'x.com': 'X',
-  'instagram.com': 'Instagram',
-  'facebook.com': 'Facebook',
-  'reddit.com': 'Reddit',
-  'tiktok.com': 'TikTok',
-  'youtube.com': 'YouTube',
-  'linkedin.com': 'LinkedIn',
-  'snapchat.com': 'Snapchat',
-  'pinterest.com': 'Pinterest',
-  'threads.net': 'Threads',
-  'github.com': 'GitHub',
-  'stackoverflow.com': 'Stack Overflow',
-  'medium.com': 'Medium',
-  'dev.to': 'Dev.to',
-  'notion.so': 'Notion',
-  'figma.com': 'Figma',
-  'slack.com': 'Slack',
-  'discord.com': 'Discord',
-  'gmail.com': 'Gmail',
-  'google.com': 'Google',
-  'amazon.com': 'Amazon'
+  'notion': 'Notion', 'asana': 'Asana', 'trello': 'Trello',
+  'monday': 'Monday', 'clickup': 'ClickUp', 'basecamp': 'Basecamp',
+  'todoist': 'Todoist', 'linear': 'Linear', 'airtable': 'Airtable',
+  'slack': 'Slack', 'zoom': 'Zoom', 'loom': 'Loom',
+  'calendly': 'Calendly', 'github': 'GitHub', 'gitlab': 'GitLab',
+  'figma': 'Figma', 'canva': 'Canva', 'miro': 'Miro',
+  'vercel': 'Vercel', 'netlify': 'Netlify',
+  'twitter': 'Twitter', 'x': 'X', 'instagram': 'Instagram',
+  'facebook': 'Facebook', 'reddit': 'Reddit', 'tiktok': 'TikTok',
+  'youtube': 'YouTube', 'linkedin': 'LinkedIn', 'snapchat': 'Snapchat',
+  'pinterest': 'Pinterest', 'threads': 'Threads', 'discord': 'Discord',
+  'twitch': 'Twitch',
+  'nytimes': 'NY Times', 'washingtonpost': 'Washington Post',
+  'theguardian': 'The Guardian', 'bbc': 'BBC', 'cnn': 'CNN',
+  'npr': 'NPR', 'bloomberg': 'Bloomberg', 'wsj': 'WSJ',
+  'techcrunch': 'TechCrunch', 'theverge': 'The Verge',
+  'netflix': 'Netflix', 'spotify': 'Spotify', 'hulu': 'Hulu',
+  'disneyplus': 'Disney+', 'soundcloud': 'SoundCloud',
+  'stackoverflow': 'Stack Overflow', 'dev': 'Dev.to',
+  'gmail': 'Gmail', 'google': 'Google', 'amazon': 'Amazon'
 };
+
+const MOTIVATIONAL_QUOTES = [
+  { text: "I am deliberate and afraid of nothing.", author: "Audre Lorde" },
+  { text: "When you learn, teach. When you get, give.", author: "Maya Angelou" },
+  { text: "Do not live someone else's life and someone else's idea of what womanhood is.", author: "Viola Davis" },
+  { text: "Step out of the history that is holding you back. Step into the new story you are willing to create.", author: "Oprah Winfrey" },
+  { text: "I had to make my own living and my own opportunity. Don't sit down and wait for opportunities to come. Get up and make them.", author: "Madam C.J. Walker" },
+  { text: "Just don't give up trying to do what you really want to do. Where there is love and inspiration, I don't think you can go wrong.", author: "Ella Fitzgerald" },
+  { text: "We need to reshape our own perception of how we view ourselves.", author: "Beyoncé" },
+  { text: "No matter what accomplishments you make, somebody helps you.", author: "Althea Gibson" },
+  { text: "The most common way people give up their power is by thinking they don't have any.", author: "Alice Walker" },
+  { text: "I have learned over the years that when one's mind is made up, this diminishes fear.", author: "Rosa Parks" },
+  { text: "If you are always trying to be normal, you will never know how amazing you can be.", author: "Maya Angelou" },
+  { text: "I never lose. I either win or learn.", author: "Attributed to Nelson Mandela, popularized by Simone Biles" },
+  { text: "Bring your whole self to every moment.", author: "Michelle Obama" },
+  { text: "It's not the load that breaks you down, it's the way you carry it.", author: "Lena Horne" },
+  { text: "You can't be hesitant about who you are.", author: "Viola Davis" },
+  { text: "I am not afraid of storms, for I am learning how to sail my ship.", author: "Ida B. Wells" },
+  { text: "Success is only meaningful and enjoyable if it feels like your own.", author: "Michelle Obama" },
+  { text: "When I dare to be powerful, to use my strength in the service of my vision, then it becomes less and less important whether I am afraid.", author: "Audre Lorde" },
+  { text: "Think like a queen. A queen is not afraid to fail. Failure is another stepping stone to greatness.", author: "Oprah Winfrey" },
+  { text: "You may not control all the events that happen to you, but you can decide not to be reduced by them.", author: "Maya Angelou" },
+  { text: "I had to stop letting people define me. I am who I say I am.", author: "Serena Williams" },
+  { text: "I'm not going to limit myself just because people won't accept the fact that I can do something else.", author: "Missy Elliott" },
+  { text: "The question isn't who's going to let me — it's who's going to stop me.", author: "Shirley Chisholm" },
+  { text: "Definitions belong to the definers, not the defined.", author: "Toni Morrison" },
+  { text: "You are not a mistake. You are not a problem to be solved.", author: "Nayyirah Waheed" },
+  { text: "Do not wait for someone else to come and speak for you. It's you who can change the world.", author: "Issa Rae" },
+  { text: "We realized the importance of our voices only when we were silenced.", author: "Tarana Burke" },
+  { text: "I am my best work — a series of road maps, reports, recipes, and instructions for my survivors.", author: "Audre Lorde" },
+  { text: "I never intended to become a run-of-the-mill person.", author: "Barbara Jordan" },
+  { text: "Don't wait around for other people to be happy for you. Any happiness you get you've got to make yourself.", author: "Alice Walker" },
+  { text: "If you don't like something, change it. If you can't change it, change your attitude.", author: "Maya Angelou" },
+  { text: "Excellence is the best deterrent to racism or sexism.", author: "Oprah Winfrey" },
+  { text: "You have to know what sparks the light in you so that you, in your own way, can illuminate the world.", author: "Oprah Winfrey" },
+  { text: "I am not free while any woman is unfree, even when her shackles are very different from my own.", author: "Audre Lorde" },
+  { text: "The thing women have yet to learn is nobody gives you power. You just take it.", author: "Roseanne Barr" },
+  { text: "Greatness is not a destination but a continuous journey that never ends.", author: "Serena Williams" },
+  { text: "There is always light. If only we're brave enough to see it. If only we're brave enough to be it.", author: "Amanda Gorman" },
+  { text: "The work of your life is to discover your purpose and get on with the business of living it out.", author: "Oprah Winfrey" },
+  { text: "You wanna fly, you got to give up the thing that weighs you down.", author: "Toni Morrison" },
+  { text: "I was born to make history.", author: "Simone Biles" },
+  { text: "I have a lot of things to prove to myself. One is that I can live my life fearlessly.", author: "Oprah Winfrey" },
+  { text: "Your crown has been bought and paid for. Put it on your head and wear it.", author: "Maya Angelou" },
+  { text: "We must always attempt to lift as we climb.", author: "Angela Davis" },
+  { text: "Don't be afraid. Be focused. Be determined. Be hopeful. Be empowered.", author: "Michelle Obama" },
+  { text: "I'm living proof that dreams do come true.", author: "Misty Copeland" },
+  { text: "What I know for sure is that speaking your truth is the most powerful tool we all have.", author: "Oprah Winfrey" },
+  { text: "Even if it makes others uncomfortable, I will love who I am.", author: "Janelle Monáe" },
+  { text: "You can't use up creativity. The more you use, the more you have.", author: "Maya Angelou" },
+  { text: "Power is not given to you. You have to take it.", author: "Beyoncé" },
+  { text: "Above all, be the heroine of your life, not the victim.", author: "Nora Ephron" },
+  { text: "If they don't give you a seat at the table, bring a folding chair.", author: "Shirley Chisholm" }
+];
 
 let currentSegment = null;
 let audioContext = null;
@@ -59,19 +140,28 @@ function extractDomain(url) {
 }
 
 function formatDomainName(domain) {
+  let name = domain.replace(/^www\./, '');
+  const parts = name.split('.');
+  const baseName = parts[0];
+
+  if (BRAND_NAMES[baseName]) {
+    return BRAND_NAMES[baseName];
+  }
+
   if (BRAND_NAMES[domain]) {
     return BRAND_NAMES[domain];
   }
 
-  let name = domain.replace(/^www\./, '');
-  const parts = name.split('.');
-  name = parts[0];
-
-  return name.charAt(0).toUpperCase() + name.slice(1);
+  return baseName.charAt(0).toUpperCase() + baseName.slice(1);
 }
 
 function getCategoryForDomain(domain) {
-  return SOCIAL_DOMAINS.has(domain) ? 'Social' : 'Productivity';
+  for (const [category, domains] of Object.entries(DOMAIN_CATEGORIES)) {
+    if (domains.has(domain)) {
+      return category;
+    }
+  }
+  return 'Other';
 }
 
 function playAudio(frequency, duration) {
@@ -283,7 +373,7 @@ async function getTodayStats() {
     focusStats = { date: todayKey, focusSessionsCompleted: 0 };
   }
 
-  const byCategory = { Social: 0, Productivity: 0 };
+  const byCategory = { Productivity: 0, Social: 0, News: 0, Shopping: 0, Entertainment: 0, Other: 0 };
   const topDomains = Object.entries(dailyTotals.byDomain)
     .map(([domain, ms]) => {
       const category = getCategoryForDomain(domain);
@@ -319,27 +409,39 @@ async function getWeeklyStats() {
     const dailyTotals = result[`dailyTotals_${key}`] || { byDomain: {}, totalMs: 0 };
     const focusStats = result[`focusStats_${key}`] || { focusSessionsCompleted: 0 };
 
-    let socialMs = 0;
-    let productivityMs = 0;
+    const categoryMs = { Productivity: 0, Social: 0, News: 0, Shopping: 0, Entertainment: 0, Other: 0 };
 
     Object.entries(dailyTotals.byDomain || {}).forEach(([domain, ms]) => {
-      if (SOCIAL_DOMAINS.has(domain)) {
-        socialMs += ms;
-      } else {
-        productivityMs += ms;
-      }
+      const category = getCategoryForDomain(domain);
+      categoryMs[category] += ms;
     });
 
     stats[key] = {
       date: key,
       totalMs: dailyTotals.totalMs,
-      socialMs,
-      productivityMs,
+      ...categoryMs,
       focusSessionsCompleted: focusStats.focusSessionsCompleted
     };
   }
 
   return stats;
+}
+
+async function getDailyQuote() {
+  const todayKey = getTodayKey();
+  const result = await chrome.storage.local.get(['lastQuoteDate', 'quoteIndex']);
+
+  let quoteIndex = result.quoteIndex || 0;
+
+  if (result.lastQuoteDate !== todayKey) {
+    quoteIndex = (quoteIndex + 1) % MOTIVATIONAL_QUOTES.length;
+    await chrome.storage.local.set({
+      lastQuoteDate: todayKey,
+      quoteIndex
+    });
+  }
+
+  return MOTIVATIONAL_QUOTES[quoteIndex];
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -386,6 +488,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'GET_MUTE_STATE':
           const muteResult = await chrome.storage.local.get('muteAudio');
           sendResponse({ muteAudio: muteResult.muteAudio || false });
+          break;
+
+        case 'GET_DAILY_QUOTE':
+          const quote = await getDailyQuote();
+          sendResponse(quote);
           break;
 
         default:

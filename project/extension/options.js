@@ -3,6 +3,8 @@ const focusSessionsEl = document.getElementById('focusSessions');
 const domainsTableBody = document.getElementById('domainsTableBody');
 const weeklySummaryEl = document.getElementById('weeklySummary');
 const recommendationsEl = document.getElementById('recommendationsSection');
+const quoteTextEl = document.getElementById('quoteText');
+const quoteAuthorEl = document.getElementById('quoteAuthor');
 
 function formatDuration(ms) {
   const totalMinutes = Math.floor(ms / 60000);
@@ -26,26 +28,44 @@ function drawWeeklyChart(weeklyStats) {
   canvas.height = height;
 
   const dates = Object.keys(weeklyStats).sort();
+
+  if (dates.length === 0) {
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet — start browsing to track your activity', width / 2, height / 2);
+    return;
+  }
+
   const barWidth = width / 8;
+  const categories = ['Productivity', 'Social', 'News', 'Shopping', 'Entertainment'];
+  const colors = {
+    Productivity: '#10b981',
+    Social: '#3b82f6',
+    News: '#f59e0b',
+    Shopping: '#f97316',
+    Entertainment: '#a855f7'
+  };
+
   const maxTime = Math.max(
-    ...dates.map(date => Math.max(
-      weeklyStats[date].socialMs,
-      weeklyStats[date].productivityMs
-    )),
+    ...dates.map(date => weeklyStats[date].totalMs),
     1
   );
 
   dates.forEach((date, index) => {
     const stats = weeklyStats[date];
     const x = index * barWidth + barWidth / 2;
-    const socialHeight = (stats.socialMs / maxTime) * (height - 60);
-    const productivityHeight = (stats.productivityMs / maxTime) * (height - 60);
+    let stackedHeight = 0;
 
-    ctx.fillStyle = '#f87171';
-    ctx.fillRect(x - 15, height - 40 - socialHeight, 12, socialHeight);
-
-    ctx.fillStyle = '#667eea';
-    ctx.fillRect(x + 3, height - 40 - productivityHeight, 12, productivityHeight);
+    categories.forEach(category => {
+      const categoryMs = stats[category] || 0;
+      if (categoryMs > 0) {
+        const barHeight = (categoryMs / maxTime) * (height - 60);
+        ctx.fillStyle = colors[category];
+        ctx.fillRect(x - 20, height - 40 - stackedHeight - barHeight, 40, barHeight);
+        stackedHeight += barHeight;
+      }
+    });
 
     const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
     ctx.fillStyle = '#6b7280';
@@ -61,12 +81,16 @@ function drawWeeklyChart(weeklyStats) {
   ctx.lineTo(width, height - 40);
   ctx.stroke();
 
-  ctx.fillStyle = '#9ca3af';
+  let legendY = 20;
   ctx.font = '11px sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText('Social', 30, 20);
-  ctx.fillStyle = '#667eea';
-  ctx.fillText('Productive', 30, 35);
+  ctx.textAlign = 'left';
+  categories.forEach((category) => {
+    ctx.fillStyle = colors[category];
+    ctx.fillRect(10, legendY - 8, 12, 12);
+    ctx.fillStyle = '#6b7280';
+    ctx.fillText(category, 28, legendY);
+    legendY += 18;
+  });
 }
 
 function generateRecommendations(weeklyStats) {
@@ -75,30 +99,40 @@ function generateRecommendations(weeklyStats) {
 
   let totalSocial = 0;
   let totalProductive = 0;
+  let totalNews = 0;
   let totalFocus = 0;
   let topDay = null;
   let topDayTime = 0;
 
   dates.forEach(date => {
     const stats = weeklyStats[date];
-    totalSocial += stats.socialMs;
-    totalProductive += stats.productivityMs;
+    totalSocial += stats.Social || 0;
+    totalProductive += stats.Productivity || 0;
+    totalNews += stats.News || 0;
     totalFocus += stats.focusSessionsCompleted;
 
-    const dayTotal = stats.socialMs + stats.productivityMs;
+    const dayTotal = stats.totalMs;
     if (dayTotal > topDayTime) {
       topDayTime = dayTotal;
       topDay = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
     }
   });
 
-  const totalTime = totalSocial + totalProductive;
+  const totalTime = totalSocial + totalProductive + totalNews;
   const socialPercentage = totalTime > 0 ? (totalSocial / totalTime) * 100 : 0;
+  const newsPercentage = totalTime > 0 ? (totalNews / totalTime) * 100 : 0;
 
   if (socialPercentage > 40) {
     recommendations.push({
       title: 'Reduce Distractions',
       text: `You spent ${Math.round(socialPercentage)}% of your time on social sites this week. Try blocking distractions during your first 2 hours of work.`
+    });
+  }
+
+  if (newsPercentage > 30) {
+    recommendations.push({
+      title: 'News Consumption High',
+      text: `You spent ${Math.round(newsPercentage)}% of your time reading news. Consider batching news reading into dedicated time blocks.`
     });
   }
 
@@ -109,14 +143,11 @@ function generateRecommendations(weeklyStats) {
     });
   }
 
-  const emptyDays = dates.filter(date => {
-    const stats = weeklyStats[date];
-    return (stats.socialMs + stats.productivityMs) === 0;
-  }).length;
+  const emptyDays = dates.filter(date => weeklyStats[date].totalMs === 0).length;
 
   if (emptyDays > 0) {
     const dayNames = dates
-      .filter(date => (weeklyStats[date].socialMs + weeklyStats[date].productivityMs) === 0)
+      .filter(date => weeklyStats[date].totalMs === 0)
       .map(date => new Date(date).toLocaleDateString('en-US', { weekday: 'short' }))
       .join(', ');
     recommendations.push({
@@ -125,7 +156,7 @@ function generateRecommendations(weeklyStats) {
     });
   }
 
-  if (recommendations.length === 0) {
+  if (recommendations.length === 0 && topDay) {
     recommendations.push({
       title: 'Keep It Up!',
       text: `You're maintaining a healthy balance this week. Your most productive day was ${topDay}—keep leveraging what works!`
@@ -172,12 +203,12 @@ async function loadWeeklyStats() {
     let totalFocus = 0;
 
     dates.forEach(date => {
-      totalProductive += weeklyStats[date].productivityMs;
+      totalProductive += weeklyStats[date].Productivity || 0;
       totalFocus += weeklyStats[date].focusSessionsCompleted;
     });
 
     weeklySummaryEl.innerHTML = `
-      <div>Total focus time: ${formatDuration(totalProductive)} | Focus sessions: ${totalFocus}</div>
+      <div>Total productive time: ${formatDuration(totalProductive)} | Focus sessions: ${totalFocus}</div>
     `;
 
     const recommendations = generateRecommendations(weeklyStats);
@@ -194,6 +225,17 @@ async function loadWeeklyStats() {
   }
 }
 
+async function loadQuote() {
+  try {
+    const quote = await chrome.runtime.sendMessage({ action: 'GET_DAILY_QUOTE' });
+    quoteTextEl.textContent = `"${quote.text}"`;
+    quoteAuthorEl.textContent = `— ${quote.author}`;
+  } catch (error) {
+    console.error('Error loading quote:', error);
+  }
+}
+
 loadStats();
 loadWeeklyStats();
+loadQuote();
 setInterval(loadStats, 5000);
