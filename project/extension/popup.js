@@ -3,6 +3,7 @@ const timeDisplay = document.getElementById('timeDisplay');
 const startFocusBtn = document.getElementById('startFocusBtn');
 const startBreakBtn = document.getElementById('startBreakBtn');
 const resetBtn = document.getElementById('resetBtn');
+const muteBtn = document.getElementById('muteBtn');
 const openDashboardBtn = document.getElementById('openDashboardBtn');
 
 function formatTime(ms) {
@@ -36,6 +37,16 @@ async function refreshTimer() {
   }
 }
 
+async function updateMuteButton() {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'GET_MUTE_STATE' });
+    muteBtn.textContent = response.muteAudio ? '🔇' : '🔊';
+    muteBtn.classList.toggle('muted', response.muteAudio);
+  } catch (error) {
+    console.error('Error updating mute button:', error);
+  }
+}
+
 startFocusBtn.addEventListener('click', async () => {
   await chrome.runtime.sendMessage({ action: 'START_FOCUS' });
   await refreshTimer();
@@ -51,9 +62,15 @@ resetBtn.addEventListener('click', async () => {
   await refreshTimer();
 });
 
+muteBtn.addEventListener('click', async () => {
+  await chrome.runtime.sendMessage({ action: 'TOGGLE_MUTE' });
+  await updateMuteButton();
+});
+
 openDashboardBtn.addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
 });
 
 refreshTimer();
+updateMuteButton();
 setInterval(refreshTimer, 1000);

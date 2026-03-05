@@ -2,7 +2,46 @@ const FOCUS_DURATION = 25 * 60 * 1000;
 const BREAK_DURATION = 5 * 60 * 1000;
 const ALARM_NAME = 'pomodoroTimer';
 
+const SOCIAL_DOMAINS = new Set([
+  'twitter.com', 'x.com',
+  'instagram.com',
+  'facebook.com',
+  'reddit.com',
+  'tiktok.com',
+  'youtube.com',
+  'linkedin.com',
+  'snapchat.com',
+  'pinterest.com',
+  'threads.net'
+]);
+
+const BRAND_NAMES = {
+  'twitter.com': 'Twitter',
+  'x.com': 'X',
+  'instagram.com': 'Instagram',
+  'facebook.com': 'Facebook',
+  'reddit.com': 'Reddit',
+  'tiktok.com': 'TikTok',
+  'youtube.com': 'YouTube',
+  'linkedin.com': 'LinkedIn',
+  'snapchat.com': 'Snapchat',
+  'pinterest.com': 'Pinterest',
+  'threads.net': 'Threads',
+  'github.com': 'GitHub',
+  'stackoverflow.com': 'Stack Overflow',
+  'medium.com': 'Medium',
+  'dev.to': 'Dev.to',
+  'notion.so': 'Notion',
+  'figma.com': 'Figma',
+  'slack.com': 'Slack',
+  'discord.com': 'Discord',
+  'gmail.com': 'Gmail',
+  'google.com': 'Google',
+  'amazon.com': 'Amazon'
+};
+
 let currentSegment = null;
+let audioContext = null;
 
 function getTodayKey() {
   const now = new Date();
@@ -16,6 +55,48 @@ function extractDomain(url) {
     return urlObj.hostname || 'unknown';
   } catch {
     return 'unknown';
+  }
+}
+
+function formatDomainName(domain) {
+  if (BRAND_NAMES[domain]) {
+    return BRAND_NAMES[domain];
+  }
+
+  let name = domain.replace(/^www\./, '');
+  const parts = name.split('.');
+  name = parts[0];
+
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+function getCategoryForDomain(domain) {
+  return SOCIAL_DOMAINS.has(domain) ? 'Social' : 'Productivity';
+}
+
+function playAudio(frequency, duration) {
+  try {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    const now = audioContext.currentTime;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+
+    osc.frequency.value = frequency;
+    osc.type = 'sine';
+
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+    osc.start(now);
+    osc.stop(now + duration);
+  } catch (error) {
+    console.error('Audio playback error:', error);
   }
 }
 
@@ -38,7 +119,10 @@ async function closeCurrentSegment() {
   dailyTotals.byDomain[domain] = (dailyTotals.byDomain[domain] || 0) + elapsed;
   dailyTotals.totalMs += elapsed;
 
-  await chrome.storage.local.set({ dailyTotals, todayKey });
+  const updateObj = { dailyTotals, todayKey };
+  updateObj[`dailyTotals_${todayKey}`] = dailyTotals;
+
+  await chrome.storage.local.set(updateObj);
 
   currentSegment = null;
 }
@@ -90,6 +174,16 @@ async function startTimer(mode) {
   const duration = mode === 'focus' ? FOCUS_DURATION : BREAK_DURATION;
   const endsAt = Date.now() + duration;
 
+  const result = await chrome.storage.local.get('muteAudio');
+  if (!result.muteAudio) {
+    if (mode === 'focus') {
+      playAudio(523.25, 0.3);
+    } else {
+      playAudio(659.25, 0.2);
+      setTimeout(() => playAudio(783.99, 0.2), 150);
+    }
+  }
+
   await chrome.storage.local.set({
     timerState: {
       mode,
@@ -117,7 +211,7 @@ async function resetTimer() {
 async function handleAlarm(alarm) {
   if (alarm.name !== ALARM_NAME) return;
 
-  const result = await chrome.storage.local.get(['timerState', 'focusStats', 'todayKey']);
+  const result = await chrome.storage.local.get(['timerState', 'focusStats', 'todayKey', 'muteAudio']);
   const timerState = result.timerState || { mode: 'idle' };
   const todayKey = getTodayKey();
 
@@ -131,6 +225,11 @@ async function handleAlarm(alarm) {
     focusStats.focusSessionsCompleted += 1;
     await chrome.storage.local.set({ focusStats });
 
+    if (!result.muteAudio) {
+      playAudio(880, 0.3);
+      setTimeout(() => playAudio(1046.5, 0.3), 200);
+    }
+
     chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icon128.png',
@@ -139,6 +238,11 @@ async function handleAlarm(alarm) {
       priority: 2
     });
   } else if (timerState.mode === 'break') {
+    if (!result.muteAudio) {
+      playAudio(659.25, 0.2);
+      setTimeout(() => playAudio(783.99, 0.2), 150);
+    }
+
     chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icon128.png',
@@ -179,16 +283,63 @@ async function getTodayStats() {
     focusStats = { date: todayKey, focusSessionsCompleted: 0 };
   }
 
+  const byCategory = { Social: 0, Productivity: 0 };
   const topDomains = Object.entries(dailyTotals.byDomain)
-    .map(([domain, ms]) => ({ domain, ms }))
+    .map(([domain, ms]) => {
+      const category = getCategoryForDomain(domain);
+      byCategory[category] += ms;
+      return {
+        domain,
+        displayName: formatDomainName(domain),
+        category,
+        ms
+      };
+    })
     .sort((a, b) => b.ms - a.ms)
     .slice(0, 10);
 
   return {
     totalMs: dailyTotals.totalMs,
     focusSessionsCompleted: focusStats.focusSessionsCompleted,
-    topDomains
+    topDomains,
+    byCategory
   };
+}
+
+async function getWeeklyStats() {
+  const stats = {};
+  const now = new Date();
+
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+    const result = await chrome.storage.local.get([`dailyTotals_${key}`, `focusStats_${key}`]);
+    const dailyTotals = result[`dailyTotals_${key}`] || { byDomain: {}, totalMs: 0 };
+    const focusStats = result[`focusStats_${key}`] || { focusSessionsCompleted: 0 };
+
+    let socialMs = 0;
+    let productivityMs = 0;
+
+    Object.entries(dailyTotals.byDomain || {}).forEach(([domain, ms]) => {
+      if (SOCIAL_DOMAINS.has(domain)) {
+        socialMs += ms;
+      } else {
+        productivityMs += ms;
+      }
+    });
+
+    stats[key] = {
+      date: key,
+      totalMs: dailyTotals.totalMs,
+      socialMs,
+      productivityMs,
+      focusSessionsCompleted: focusStats.focusSessionsCompleted
+    };
+  }
+
+  return stats;
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -218,6 +369,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'GET_TODAY_STATS':
           const stats = await getTodayStats();
           sendResponse(stats);
+          break;
+
+        case 'GET_WEEKLY_STATS':
+          const weeklyStats = await getWeeklyStats();
+          sendResponse(weeklyStats);
+          break;
+
+        case 'TOGGLE_MUTE':
+          const result = await chrome.storage.local.get('muteAudio');
+          const newMuteState = !result.muteAudio;
+          await chrome.storage.local.set({ muteAudio: newMuteState });
+          sendResponse({ muteAudio: newMuteState });
+          break;
+
+        case 'GET_MUTE_STATE':
+          const muteResult = await chrome.storage.local.get('muteAudio');
+          sendResponse({ muteAudio: muteResult.muteAudio || false });
           break;
 
         default:

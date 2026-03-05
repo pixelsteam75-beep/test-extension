@@ -78,6 +78,55 @@ h1 {
   letter-spacing: 0.5px;
 }
 
+.weekly-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 32px;
+}
+
+.chart-container {
+  margin-bottom: 24px;
+  position: relative;
+  height: 300px;
+}
+
+.weekly-summary {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.recommendations-section {
+  margin-bottom: 32px;
+}
+
+.recommendation-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #667eea;
+}
+
+.recommendation-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.recommendation-card p {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
 .domains-section {
   background: #fff;
   border-radius: 16px;
@@ -118,8 +167,8 @@ th {
 }
 
 th:first-child {
-  width: 60px;
-  text-align: center;
+  width: 100px;
+  text-align: left;
 }
 
 th:last-child {
@@ -147,9 +196,10 @@ td {
 }
 
 td:first-child {
-  text-align: center;
-  font-weight: 600;
-  color: #667eea;
+  text-align: left;
+  font-weight: 500;
+  font-size: 13px;
+  color: #9ca3af;
 }
 
 td:last-child {
