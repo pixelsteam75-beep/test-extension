@@ -143,19 +143,6 @@ function generateRecommendations(weeklyStats) {
     });
   }
 
-  const emptyDays = dates.filter(date => weeklyStats[date].totalMs === 0).length;
-
-  if (emptyDays > 0) {
-    const dayNames = dates
-      .filter(date => weeklyStats[date].totalMs === 0)
-      .map(date => new Date(date).toLocaleDateString('en-US', { weekday: 'short' }))
-      .join(', ');
-    recommendations.push({
-      title: 'Tracking Gaps Detected',
-      text: `You had gaps in tracking on ${dayNames}. Make sure the extension is active during your work sessions.`
-    });
-  }
-
   if (recommendations.length === 0 && topDay) {
     recommendations.push({
       title: 'Keep It Up!',
