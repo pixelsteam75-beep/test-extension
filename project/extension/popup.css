@@ -33,13 +33,62 @@
 
 body {
   width: 320px;
+  min-height: 500px;
   font-family: 'Inter', 'Geist', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--background);
+  background: var(--background) url('sunset-background.PNG') no-repeat center center;
+  background-size: cover;
   color: var(--foreground);
+  position: relative;
+  overflow: hidden;
+}
+
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(26, 18, 37, 0.75);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .container {
   padding: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Decorative gradient orbs */
+.container::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 15%;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #f3a8d3, #e8a87c 40%, #8b7ba5 80%, #4a3d5c);
+  box-shadow: 
+    0 10px 30px rgba(232, 168, 124, 0.4),
+    inset -3px -3px 10px rgba(0, 0, 0, 0.3),
+    inset 3px 3px 10px rgba(255, 255, 255, 0.3);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.container::after {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 15%;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 25% 25%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 20%, transparent 45%);
+  z-index: 3;
+  pointer-events: none;
 }
 
 h1 {
@@ -50,6 +99,37 @@ h1 {
   letter-spacing: -0.5px;
   color: var(--foreground);
   text-shadow: 0 0 16px rgba(232, 168, 124, 0.35), 0 0 40px rgba(232, 168, 124, 0.1);
+  position: relative;
+}
+
+h1::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: 15%;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #c5a0d3, #8b7ba5 50%, #4a3d5c);
+  box-shadow: 
+    0 8px 25px rgba(197, 160, 211, 0.35),
+    inset -2px -2px 8px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 8px rgba(255, 255, 255, 0.3);
+  z-index: 2;
+  pointer-events: none;
+}
+
+h1::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: 15%;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 28% 28%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 20%, transparent 40%);
+  z-index: 3;
+  pointer-events: none;
 }
 
 .timer-section {

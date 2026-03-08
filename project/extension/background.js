@@ -122,8 +122,6 @@ const MOTIVATIONAL_QUOTES = [
 ];
 
 let currentSegment = null;
-let audioContext = null;
-let currentAudio = null;
 
 function getTodayKey() {
   const now = new Date();
@@ -165,61 +163,69 @@ function getCategoryForDomain(domain) {
   return 'Other';
 }
 
-function playAudio(frequency, duration) {
-  try {
-    if (!audioContext) {
-      audioContext = new AudioContext();
-    }
+// Offscreen document management
+let creatingOffscreen;
 
-    const now = audioContext.currentTime;
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
+async function ensureOffscreen() {
+  const url = chrome.runtime.getURL('offscreen.html');
 
-    osc.connect(gain);
-    gain.connect(audioContext.destination);
+  const contexts = await chrome.runtime.getContexts({
+    contextTypes: ['OFFSCREEN_DOCUMENT'],
+    documentUrls: [url],
+  });
 
-    osc.frequency.value = frequency;
-    osc.type = 'sine';
+  if (contexts.length > 0) return;
 
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+  if (!creatingOffscreen) {
+    creatingOffscreen = chrome.offscreen.createDocument({
+      url: 'offscreen.html',
+      reasons: ['AUDIO_PLAYBACK'],
+      justification: 'Play timer notification sound',
+    });
 
-    osc.start(now);
-    osc.stop(now + duration);
-  } catch (error) {
-    console.error('Audio playback error:', error);
+    await creatingOffscreen;
+    creatingOffscreen = null;
+  } else {
+    await creatingOffscreen;
   }
 }
 
 async function playAlarmSound() {
   try {
-    // Stop any currently playing alarm
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio = null;
-    }
+    // Ensure offscreen document is created
+    await ensureOffscreen();
 
     // Get alarm preference
     const result = await chrome.storage.local.get('alarmSound');
     const alarmType = result.alarmSound || 'quiet'; // Default to quiet
+
+    // Send message to offscreen document to play alarm
+    await chrome.runtime.sendMessage({
+      type: 'PLAY_ALARM',
+      alarmType: alarmType
+    });
     
-    // Select the appropriate alarm file
-    const alarmFile = alarmType === 'loud' ? 'alarm-loud.mp3' : 'alarm-quiet.mp3';
-    
-    // Create and play audio
-    currentAudio = new Audio(chrome.runtime.getURL(alarmFile));
-    currentAudio.volume = 0.7;
-    await currentAudio.play();
-    
-    // Clean up after playing
-    currentAudio.onended = () => {
-      currentAudio = null;
-    };
+    console.log('Alarm sound requested:', alarmType);
   } catch (error) {
     console.error('Alarm sound playback error:', error);
-    // Fallback to beep sound if MP3 fails
-    playAudio(880, 0.3);
-    setTimeout(() => playAudio(1046.5, 0.3), 200);
+    // Fallback to beep sound if offscreen fails
+    try {
+      await ensureOffscreen();
+      await chrome.runtime.sendMessage({
+        type: 'PLAY_BEEP',
+        frequency: 880,
+        duration: 0.3
+      });
+      setTimeout(async () => {
+        await chrome.runtime.sendMessage({
+          type: 'PLAY_BEEP',
+          frequency: 1046.5,
+          duration: 0.3
+        });
+      }, 200);
+    } catch (fallbackError) {
+      console.error('Beep fallback also failed:', fallbackError);
+    }
   }
 }
 
@@ -299,11 +305,30 @@ async function startTimer(mode) {
 
   const result = await chrome.storage.local.get('muteAudio');
   if (!result.muteAudio) {
-    if (mode === 'focus') {
-      playAudio(523.25, 0.3);
-    } else {
-      playAudio(659.25, 0.2);
-      setTimeout(() => playAudio(783.99, 0.2), 150);
+    try {
+      await ensureOffscreen();
+      if (mode === 'focus') {
+        await chrome.runtime.sendMessage({
+          type: 'PLAY_BEEP',
+          frequency: 523.25,
+          duration: 0.3
+        });
+      } else {
+        await chrome.runtime.sendMessage({
+          type: 'PLAY_BEEP',
+          frequency: 659.25,
+          duration: 0.2
+        });
+        setTimeout(async () => {
+          await chrome.runtime.sendMessage({
+            type: 'PLAY_BEEP',
+            frequency: 783.99,
+            duration: 0.2
+          });
+        }, 150);
+      }
+    } catch (error) {
+      console.error('Start timer sound error:', error);
     }
   }
 
