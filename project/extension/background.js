@@ -123,6 +123,7 @@ const MOTIVATIONAL_QUOTES = [
 
 let currentSegment = null;
 let audioContext = null;
+let currentAudio = null;
 
 function getTodayKey() {
   const now = new Date();
@@ -167,7 +168,7 @@ function getCategoryForDomain(domain) {
 function playAudio(frequency, duration) {
   try {
     if (!audioContext) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      audioContext = new AudioContext();
     }
 
     const now = audioContext.currentTime;
@@ -187,6 +188,38 @@ function playAudio(frequency, duration) {
     osc.stop(now + duration);
   } catch (error) {
     console.error('Audio playback error:', error);
+  }
+}
+
+async function playAlarmSound() {
+  try {
+    // Stop any currently playing alarm
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+
+    // Get alarm preference
+    const result = await chrome.storage.local.get('alarmSound');
+    const alarmType = result.alarmSound || 'quiet'; // Default to quiet
+    
+    // Select the appropriate alarm file
+    const alarmFile = alarmType === 'loud' ? 'alarm-loud.mp3' : 'alarm-quiet.mp3';
+    
+    // Create and play audio
+    currentAudio = new Audio(chrome.runtime.getURL(alarmFile));
+    currentAudio.volume = 0.7;
+    await currentAudio.play();
+    
+    // Clean up after playing
+    currentAudio.onended = () => {
+      currentAudio = null;
+    };
+  } catch (error) {
+    console.error('Alarm sound playback error:', error);
+    // Fallback to beep sound if MP3 fails
+    playAudio(880, 0.3);
+    setTimeout(() => playAudio(1046.5, 0.3), 200);
   }
 }
 
@@ -316,8 +349,7 @@ async function handleAlarm(alarm) {
     await chrome.storage.local.set({ focusStats });
 
     if (!result.muteAudio) {
-      playAudio(880, 0.3);
-      setTimeout(() => playAudio(1046.5, 0.3), 200);
+      await playAlarmSound();
     }
 
     chrome.notifications.create({
@@ -329,8 +361,7 @@ async function handleAlarm(alarm) {
     });
   } else if (timerState.mode === 'break') {
     if (!result.muteAudio) {
-      playAudio(659.25, 0.2);
-      setTimeout(() => playAudio(783.99, 0.2), 150);
+      await playAlarmSound();
     }
 
     chrome.notifications.create({
@@ -493,6 +524,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'GET_DAILY_QUOTE':
           const quote = await getDailyQuote();
           sendResponse(quote);
+          break;
+
+        case 'GET_ALARM_PREFERENCE':
+          const alarmPref = await chrome.storage.local.get('alarmSound');
+          sendResponse({ alarmSound: alarmPref.alarmSound || 'quiet' });
+          break;
+
+        case 'SET_ALARM_PREFERENCE':
+          await chrome.storage.local.set({ alarmSound: message.alarmSound });
+          sendResponse({ success: true });
           break;
 
         default:

@@ -3,8 +3,9 @@ const timeDisplay = document.getElementById('timeDisplay');
 const startFocusBtn = document.getElementById('startFocusBtn');
 const startBreakBtn = document.getElementById('startBreakBtn');
 const resetBtn = document.getElementById('resetBtn');
-const muteBtn = document.getElementById('muteBtn');
+const audioToggle = document.getElementById('audioToggle');
 const openDashboardBtn = document.getElementById('openDashboardBtn');
+const alarmSoundSelect = document.getElementById('alarmSound');
 
 function formatTime(ms) {
   const totalSeconds = Math.ceil(ms / 1000);
@@ -37,13 +38,13 @@ async function refreshTimer() {
   }
 }
 
-async function updateMuteButton() {
+async function updateAudioToggle() {
   try {
     const response = await chrome.runtime.sendMessage({ action: 'GET_MUTE_STATE' });
-    muteBtn.textContent = response.muteAudio ? '🔇' : '🔊';
-    muteBtn.classList.toggle('muted', response.muteAudio);
+    // Checked = audio ON (not muted), unchecked = audio OFF (muted)
+    audioToggle.checked = !response.muteAudio;
   } catch (error) {
-    console.error('Error updating mute button:', error);
+    console.error('Error updating audio toggle:', error);
   }
 }
 
@@ -62,15 +63,41 @@ resetBtn.addEventListener('click', async () => {
   await refreshTimer();
 });
 
-muteBtn.addEventListener('click', async () => {
+audioToggle.addEventListener('change', async () => {
+  // Toggle is checked = audio ON, unchecked = audio OFF (muted)
+  const muteAudio = !audioToggle.checked;
   await chrome.runtime.sendMessage({ action: 'TOGGLE_MUTE' });
-  await updateMuteButton();
+  await updateAudioToggle();
 });
 
 openDashboardBtn.addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
 });
 
+// Load and save alarm sound preference
+async function loadAlarmPreference() {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'GET_ALARM_PREFERENCE' });
+    if (response.alarmSound) {
+      alarmSoundSelect.value = response.alarmSound;
+    }
+  } catch (error) {
+    console.error('Error loading alarm preference:', error);
+  }
+}
+
+alarmSoundSelect.addEventListener('change', async () => {
+  try {
+    await chrome.runtime.sendMessage({ 
+      action: 'SET_ALARM_PREFERENCE', 
+      alarmSound: alarmSoundSelect.value 
+    });
+  } catch (error) {
+    console.error('Error saving alarm preference:', error);
+  }
+});
+
 refreshTimer();
-updateMuteButton();
+updateAudioToggle();
+loadAlarmPreference();
 setInterval(refreshTimer, 1000);

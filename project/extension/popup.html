@@ -21,8 +21,22 @@
       <button id="resetBtn" class="btn btn-danger">Reset</button>
     </div>
 
-    <div class="mute-toggle">
-      <button id="muteBtn" class="btn btn-mute" title="Toggle audio">🔊</button>
+    <div class="audio-toggle-container">
+      <label class="audio-toggle-label">
+        <span class="toggle-text">Audio</span>
+        <div class="toggle-switch">
+          <input type="checkbox" id="audioToggle" checked>
+          <span class="toggle-slider"></span>
+        </div>
+      </label>
+    </div>
+
+    <div class="alarm-selector">
+      <label for="alarmSound">Alarm Sound:</label>
+      <select id="alarmSound" class="alarm-select">
+        <option value="quiet">🔔 Quiet (Lo-fi)</option>
+        <option value="loud">📢 Loud</option>
+      </select>
     </div>
 
     <div class="dashboard-link">
