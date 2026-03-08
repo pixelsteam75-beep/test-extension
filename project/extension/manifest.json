@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Wellness MVP Tracker",
+  "name": "Pixel Focus Timer",
   "version": "1.0.0",
   "description": "Track active tab time and run Pomodoro timer - all stored locally",
   "permissions": [
