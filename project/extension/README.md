@@ -1,4 +1,4 @@
-# Wellness MVP Tracker
+# Pixel Wellness App
 
 A super-minimal Chrome Extension (Manifest V3) that tracks your active tab time by domain and includes a Pomodoro timer with a dashboard. All data is stored locally.
 
@@ -116,3 +116,6 @@ The extension consists of:
 ## License
 
 MIT
+## Audio 
+https://pixabay.com/sound-effects/musical-lo-fi-alarm-clock-243766/
+https://pixabay.com/sound-effects/film-special-effects-alarm-327234/
