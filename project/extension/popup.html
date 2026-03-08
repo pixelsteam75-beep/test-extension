@@ -16,9 +16,22 @@
     </div>
 
     <div class="controls">
-      <button id="startFocusBtn" class="btn btn-primary">Start Focus (25m)</button>
-      <button id="startBreakBtn" class="btn btn-secondary">Start Break (5m)</button>
+      <button id="startFocusBtn" class="btn btn-primary">Start Focus Session</button>
+      <button id="startBreakBtn" class="btn btn-secondary">Start Break</button>
       <button id="resetBtn" class="btn btn-danger">Reset</button>
+    </div>
+
+    <div class="timer-settings">
+      <h3>Timer Settings</h3>
+      <div class="settings-row">
+        <label for="focusInput">Focus Time (minutes)</label>
+        <input id="focusInput" type="number" min="1" max="120" value="25">
+      </div>
+      <div class="settings-row">
+        <label for="breakInput">Break Time (minutes)</label>
+        <input id="breakInput" type="number" min="1" max="60" value="5">
+      </div>
+      <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
     </div>
 
     <div class="audio-toggle-container">

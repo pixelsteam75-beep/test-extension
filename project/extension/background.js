@@ -1,5 +1,6 @@
-const FOCUS_DURATION = 25 * 60 * 1000;
-const BREAK_DURATION = 5 * 60 * 1000;
+// Default durations (in milliseconds) - these are fallback values
+const DEFAULT_FOCUS_DURATION = 25 * 60 * 1000;
+const DEFAULT_BREAK_DURATION = 5 * 60 * 1000;
 const ALARM_NAME = 'pomodoroTimer';
 
 const DOMAIN_CATEGORIES = {
@@ -300,11 +301,19 @@ async function handleWindowFocusChanged(windowId) {
 async function startTimer(mode) {
   await closeCurrentSegment();
 
-  const duration = mode === 'focus' ? FOCUS_DURATION : BREAK_DURATION;
+  // Get customizable durations from storage
+  const settings = await chrome.storage.local.get(['focusDuration', 'breakDuration', 'muteAudio']);
+  const focusMinutes = settings.focusDuration || 25;
+  const breakMinutes = settings.breakDuration || 5;
+  
+  // Calculate duration in milliseconds
+  const duration = mode === 'focus' 
+    ? focusMinutes * 60 * 1000 
+    : breakMinutes * 60 * 1000;
+  
   const endsAt = Date.now() + duration;
 
-  const result = await chrome.storage.local.get('muteAudio');
-  if (!result.muteAudio) {
+  if (!settings.muteAudio) {
     try {
       await ensureOffscreen();
       if (mode === 'focus') {
